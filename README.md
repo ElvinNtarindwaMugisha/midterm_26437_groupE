@@ -34,6 +34,10 @@ This is a robust Spring Boot REST API designed to streamline the recovery of los
 
 ## Data Model
 
+### Entity Relationship Diagram (ERD)
+
+![ERD Diagram](ERD_Diagram.png)
+
 ### Location Tree
 The system uses a **Self-Referencing Relationship** to build the Rwanda administrative structure:
 - `Location` (Self-join via `parent_id`)

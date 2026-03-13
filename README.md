@@ -1,6 +1,6 @@
 # Lost and Found ID Card Management System
 
-A robust Spring Boot REST API designed to streamline the recovery of lost identity cards through a hierarchical administrative structure.
+This is a robust Spring Boot REST API designed to streamline the recovery of lost identity cards through a hierarchical administrative structure.
 
 ---
 
@@ -46,6 +46,21 @@ The system uses a **Self-Referencing Relationship** to build the Rwanda administ
 - **Claim**: Links all parties involved in a recovery record.
 - **Administration**: Manages the final return and verification process.
 
+## Technical Implementation & Logic
+
+This project is designed to meet specific academic requirements for database relationships and advanced Spring Data JPA features.
+
+### Database Relationships
+- **One-to-One**: Implemented between `User` and `IDCard`. One physical ID card is uniquely owned by exactly one student.
+- **One-to-Many**: Implemented between `IDCard` and `Claim`. One ID card can have multiple discovery or recovery claims over its lifetime.
+- **Many-to-Many**: Implemented between `Administration` and `Claim`. Staff handle multiple claims, and a claim can be processed by different staff members via a join table.
+
+### Advanced Features
+- **Hierarchical Locations**: Stored using a self-referencing hierarchy (`parent_id`) allowing for recursive traversal from Province down to Village.
+- **Recursive Search**: The system uses a recursive "isChildOf" logic to find all users within a Province, even if they are linked only to a specific Village.
+- **Optimized Existence Checks**: Uses `idCardRepository.existsByCardNumber()` for high-performance duplicate checking.
+- **Sorting & Pagination**: The `/api/claims` endpoint implements `Pageable` and `Sort` to handle large datasets efficiently.
+
 ---
 
 ## Getting Started
@@ -59,23 +74,31 @@ spring.datasource.password=your_password
 ```
 
 ### 2. Initialization (Seeding)
-Initialize the administrative hierarchy by sending a POST request:
+Initialize the administrative hierarchy and clear existing data:
 **POST** `http://localhost:8080/api/locations/seed`
-
-### 3. Usage Flow
-1. **POST /api/users**: Register a user who lost their card (use village code `KGR-GAT`).
-2. **POST /api/finders**: Register discovery by a finder (include `cardNumber`).
-3. **POST /api/administration**: Finalize returning the card to the owner.
 
 ---
 
 ## Core API Endpoints
 
+### Location & Search
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `POST` | `/api/locations/seed` | Reset and seed location data |
-| `GET` | `/api/users/province/code/{code}` | Find users by Province code |
+| `POST` | `/api/locations/seed` | Reset and seed location hierarchy |
+| `GET` | `/api/users/province/code/KGL` | Find all users in Kigali Province (by Code) |
+| `GET` | `/api/users/province/name/Kigali City` | Find all users in Kigali Province (by Name) |
+| `GET` | `/api/locations/province/KGL/users` | Alternative retrieval by location code |
+
+### User & Finder
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
 | `GET` | `/api/users` | List people who lost cards (Finders excluded) |
+| `POST` | `/api/users` | Register a new user and create "LOST" claim |
 | `GET` | `/api/finders` | List all discovery reports |
-| `GET` | `/api/claims` | View discovery progress |
-| `POST` | `/api/administration` | Record returned items |
+| `POST` | `/api/finders` | Register a found card (updates status to "FOUND") |
+
+### Claims & Administration
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/claims?page=0&size=10&sortBy=claimId` | Paginated and Sorted claims |
+| `POST` | `/api/administration` | Record returned items (updates status to "RETURNED") |
